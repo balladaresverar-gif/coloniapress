@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColoniaPress · El periódico de tu colonia · CDMX</title>
+<meta name="description" content="Noticias hiperlocales de las 16 alcaldías de la Ciudad de México. Impulsado por inteligencia artificial.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --red:#D62B2B;--red2:#A31E1E;
+  --ink:#1A1A1A;--ink2:#444;--ink3:#888;
+  --paper:#FDFAF5;--paper2:#F3EFE6;--paper3:#E8E2D6;
+  --rule:rgba(0,0,0,0.1);
+}
+body{background:var(--paper);font-family:'IBM Plex Sans',sans-serif;color:var(--ink);}
+
+/* MASTHEAD */
+.top-bar{background:var(--ink);color:#fff;padding:5px 20px;display:flex;justify-content:space-between;font-size:11px;letter-spacing:0.06em;}
+.alcaldia-pill{background:var(--red);color:#fff;padding:2px 8px;font-size:10px;font-weight:500;}
+.masthead-main{padding:16px 20px 10px;text-align:center;border-bottom:3px double var(--ink);}
+.logo{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;line-height:1;letter-spacing:-1px;}
+.logo span{color:var(--red);}
+.logo-sub{font-size:11px;color:var(--ink3);letter-spacing:0.2em;text-transform:uppercase;margin-top:4px;}
+
+/* NAV */
+.nav{display:flex;overflow-x:auto;border-bottom:1px solid var(--rule);padding:0 20px;scrollbar-width:none;}
+.nav::-webkit-scrollbar{display:none;}
+.nav-btn{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;font-size:12px;font-weight:500;color:var(--ink2);cursor:pointer;white-space:nowrap;font-family:'IBM Plex Sans',sans-serif;letter-spacing:0.04em;}
+.nav-btn:hover,.nav-btn.on{color:var(--red);border-bottom-color:var(--red);}
+
+/* LOCATION BAR */
+.loc-bar{background:var(--red);color:#fff;padding:7px 20px;display:flex;align-items:center;gap:8px;font-size:12px;}
+.loc-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.loc-btn{margin-left:auto;background:rgba(255,255,255,0.2);border:none;color:#fff;padding:3px 10px;font-size:10px;cursor:pointer;letter-spacing:0.08em;font-family:'IBM Plex Sans',sans-serif;}
+
+/* LAYOUT */
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 200px;border-top:1px solid var(--rule);}
+.main{border-right:1px solid var(--rule);}
+.aside{}
+
+/* SECTION LABEL */
+.sec-label{font-size:10px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);padding:10px 20px 0;display:flex;align-items:center;gap:8px;}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--rule);}
+
+/* HERO */
+.hero{padding:14px 20px;border-bottom:1px solid var(--rule);}
+.kicker{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);font-weight:500;margin-bottom:5px;}
+.hero-img{width:100%;height:140px;background:var(--paper3);margin-bottom:10px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--ink3);position:relative;}
+.img-tag{position:absolute;bottom:6px;left:6px;background:var(--red);color:#fff;font-size:9px;padding:2px 6px;font-weight:500;}
+.hero h1{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;line-height:1.25;margin-bottom:7px;}
+.hero-meta{font-size:10px;color:var(--ink3);margin-bottom:8px;display:flex;gap:10px;flex-wrap:wrap;}
+.ai-tag{background:var(--paper2);border:1px solid var(--paper3);color:var(--ink3);font-size:9px;padding:1px 6px;}
+.hero p{font-size:13px;color:var(--ink2);line-height:1.7;font-weight:300;margin-bottom:10px;}
+.hero-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.action-btn{background:none;border:1px solid var(--rule);padding:5px 10px;font-size:10px;cursor:pointer;color:var(--ink2);font-family:'IBM Plex Sans',sans-serif;letter-spacing:0.04em;}
+.action-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* NEWS GRID */
+.news-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 20px;border-bottom:1px solid var(--rule);}
+.nc{border-top:2px solid var(--ink);padding-top:8px;cursor:pointer;}
+.nc:hover .nc-title{color:var(--red);}
+.nc-k{font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--red);font-weight:500;margin-bottom:3px;}
+.nc-img{width:100%;height:70px;background:var(--paper3);margin-bottom:6px;}
+.nc-title{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;line-height:1.3;color:var(--ink);margin-bottom:4px;transition:color .15s;}
+.nc-meta{font-size:9px;color:var(--ink3);}
+
+/* BRIEFS */
+.briefs{padding:6px 20px 14px;}
+.brief{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule);cursor:pointer;}
+.brief:last-child{border:none;}
+.brief:hover .brief-t{color:var(--red);}
+.brief-n{font-family:'Playfair Display',serif;font-size:20px;color:var(--paper3);min-width:24px;line-height:1;}
+.brief-t{font-size:12px;font-weight:500;color:var(--ink);line-height:1.35;margin-bottom:2px;transition:color .15s;}
+.brief-m{font-size:9px;color:var(--ink3);}
+
+/* AD STRIP */
+.ad-strip{background:var(--paper2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:8px 20px;display:flex;align-items:center;gap:10px;}
+.ad-label{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink3);flex-shrink:0;}
+.ad-mock{flex:1;background:var(--paper3);height:44px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ink3);}
+
+/* SIDEBAR */
+.sb-block{padding:12px 14px;border-bottom:1px solid var(--rule);}
+.sb-title{font-size:9px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink);margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid var(--ink);}
+
+/* ALCALDIAS */
+.alc-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.alc-btn{background:var(--paper2);border:none;padding:5px 4px;font-size:9px;font-weight:500;color:var(--ink2);cursor:pointer;text-align:left;font-family:'IBM Plex Sans',sans-serif;transition:background .12s,color .12s;line-height:1.3;}
+.alc-btn:hover,.alc-btn.on{background:var(--red);color:#fff;}
+.alc-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--red);margin-right:3px;vertical-align:middle;}
+.alc-btn.on .alc-dot{background:#fff;}
+
+/* TRENDING */
+.tr-item{padding:6px 0;border-bottom:1px solid var(--rule);}
+.tr-item:last-child{border:none;}
+.tr-rank{font-size:10px;color:var(--red);font-weight:500;}
+.tr-title{font-size:11px;color:var(--ink);line-height:1.35;margin-top:1px;}
+
+/* NEWSLETTER */
+.nl-box{background:var(--ink);color:#fff;padding:12px 14px;margin:10px 14px;}
+.nl-title{font-family:'Playfair Display',serif;font-size:14px;margin-bottom:3px;}
+.nl-sub{font-size:10px;color:#999;margin-bottom:8px;font-weight:300;}
+.nl-input{width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:5px 8px;font-size:10px;font-family:'IBM Plex Sans',sans-serif;margin-bottom:5px;outline:none;}
+.nl-input::placeholder{color:rgba(255,255,255,0.35);}
+.nl-btn{width:100%;background:var(--red);border:none;color:#fff;padding:6px;font-size:10px;font-weight:500;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;letter-spacing:0.1em;}
+
+/* AI STATUS */
+.ai-rows{display:flex;flex-direction:column;gap:5px;}
+.ai-row{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink2);}
+.ai-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.d-green{background:#3a9e5a;animation:pulse 3s infinite;}
+.d-amber{background:#C49A28;}
+.d-gray{background:var(--paper3);}
+
+/* FOOTER */
+.footer{border-top:3px double var(--ink);padding:14px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;font-size:11px;}
+.f-logo{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
+.f-logo span{color:var(--red);}
+.f-desc{font-size:10px;color:var(--ink3);margin-top:3px;font-weight:300;line-height:1.6;}
+.f-col-title{font-weight:500;letter-spacing:0.1em;font-size:9px;text-transform:uppercase;margin-bottom:6px;}
+.f-link{display:block;color:var(--ink3);text-decoration:none;margin-bottom:3px;font-size:10px;}
+.f-link:hover{color:var(--red);}
+.footer-bottom{border-top:1px solid var(--rule);padding:8px 20px;font-size:9px;color:var(--ink3);display:flex;justify-content:space-between;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--paper);border-top:4px solid var(--red);padding:20px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto;}
+.modal-title{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:3px;}
+.modal-sub{font-size:10px;color:var(--ink3);margin-bottom:12px;}
+.modal-body{font-size:12px;line-height:1.75;color:var(--ink2);font-weight:300;}
+.modal-close{margin-top:14px;border:1px solid var(--rule);background:none;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;}
+
+@media(max-width:600px){
+  .wrap{grid-template-columns:1fr;}
+  .aside{display:none;}
+  .news-grid{grid-template-columns:1fr;}
+  .logo{font-size:36px;}
+  .footer{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<div class="top-bar">
+  <span id="topDate"></span>
+  <span class="alcaldia-pill" id="topAlc">● Cuauhtémoc</span>
+</div>
+<div class="masthead-main">
+  <div style="font-size:10px;letter-spacing:0.25em;color:var(--ink3);text-transform:uppercase;margin-bottom:4px;">El periódico de tu colonia</div>
+  <div class="logo">Colonia<span>Press</span></div>
+  <div class="logo-sub">Ciudad de México · 16 alcaldías · Noticias hiperlocales</div>
+</div>
+<nav class="nav">
+  <button class="nav-btn on" onclick="setNav(this,'local')">Tu alcaldía</button>
+  <button class="nav-btn" onclick="setNav(this,'cdmx')">CDMX</button>
+  <button class="nav-btn" onclick="setNav(this,'seg')">Seguridad</button>
+  <button class="nav-btn" onclick="setNav(this,'ser')">Servicios</button>
+  <button class="nav-btn" onclick="setNav(this,'cul')">Cultura</button>
+  <button class="nav-btn" onclick="setNav(this,'trans')">Transporte</button>
+  <button class="nav-btn" onclick="setNav(this,'pol')">Política</button>
+  <button class="nav-btn" onclick="openModal()">✦ Cómo funciona</button>
+</nav>
+
+<!-- LOCATION BAR -->
+<div class="loc-bar">
+  <div class="loc-dot"></div>
+  <span>Mostrando noticias de: <strong id="locName">Cuauhtémoc</strong></span>
+  <button class="loc-btn" onclick="document.querySelector('.sb-block').scrollIntoView({behavior:'smooth'})">Cambiar alcaldía</button>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="wrap">
+  <div class="main">
+    <div class="sec-label" id="secLabel">Noticias destacadas · Cuauhtémoc</div>
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="kicker" id="heroKicker">Movilidad urbana</div>
+      <div class="hero-img">
+        <span>[ Fotografía de portada ]</span>
+        <div class="img-tag">EN VIVO</div>
+      </div>
+      <h1 id="heroTitle">Amplían ciclovías en Reforma: 8 km nuevos conectan Chapultepec con el Centro Histórico</h1>
+      <div class="hero-meta">
+        <span>⏱ Hace 23 min</span>
+        <span>📍 Cuauhtémoc</span>
+        <span class="ai-tag">✦ Reescrito por IA</span>
+      </div>
+      <p id="heroBody">La alcaldía Cuauhtémoc y la Secretaría de Movilidad anunciaron esta mañana la extensión de la red de ciclovías sobre Paseo de la Reforma. La obra conectará directamente el Bosque de Chapultepec con el Zócalo, reduciendo los tiempos de traslado en bicicleta de 45 a 18 minutos.</p>
+      <div class="hero-actions">
+        <button class="action-btn">✦ Leer nota completa</button>
+        <button class="action-btn">↗ Compartir</button>
+      </div>
+    </div>
+
+    <!-- AD STRIP -->
+    <div class="ad-strip">
+      <span class="ad-label">Publicidad</span>
+      <div class="ad-mock">[ Anuncio segmentado · Cuauhtémoc · 728×90 ]</div>
+    </div>
+
+    <!-- NEWS GRID -->
+    <div class="news-grid" id="newsGrid"></div>
+
+    <!-- BRIEFS -->
+    <div class="sec-label">Breves</div>
+    <div class="briefs" id="briefsList"></div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="aside">
+    <div class="sb-block">
+      <div class="sb-title">Alcaldías</div>
+      <div class="alc-grid" id="alcGrid"></div>
+    </div>
+
+    <div class="nl-box">
+      <div class="nl-title">Tu boletín</div>
+      <div class="nl-sub">Noticias de tu alcaldía cada mañana</div>
+      <input type="email" class="nl-input" placeholder="tu@correo.com" id="emailInput">
+      <button class="nl-btn" onclick="subscribe()">SUSCRIBIRME · GRATIS</button>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-title">Tendencias</div>
+      <div id="trending"></div>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-title">Motor IA</div>
+      <div class="ai-rows">
+        <div class="ai-row"><div class="ai-dot d-green"></div>Scraping · 14 fuentes</div>
+        <div class="ai-row"><div class="ai-dot d-green"></div>Clasificador alcaldías</div>
+        <div class="ai-row"><div class="ai-dot d-green"></div>Reescritor IA activo</div>
+        <div class="ai-row"><div class="ai-dot d-amber"></div>Redes sociales (config)</div>
+        <div class="ai-row"><div class="ai-dot d-gray"></div>Newsletter (config)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div>
+    <div class="f-logo">Colonia<span>Press</span></div>
+    <div class="f-desc">Periodismo hiperlocal impulsado por inteligencia artificial. Las 16 alcaldías de CDMX.</div>
+  </div>
+  <div>
+    <div class="f-col-title">Alcaldías</div>
+    <a class="f-link">Cuauhtémoc · Benito Juárez</a>
+    <a class="f-link">Miguel Hidalgo · Coyoacán</a>
+    <a class="f-link">Iztapalapa · Tlalpan</a>
+    <a class="f-link">Ver todas las alcaldías →</a>
+  </div>
+  <div>
+    <div class="f-col-title">El medio</div>
+    <a class="f-link">Cómo funciona la IA</a>
+    <a class="f-link">Anuncia aquí</a>
+    <a class="f-link">Fuentes y metodología</a>
+    <a class="f-link">Contacto editorial</a>
+  </div>
+</div>
+<div class="footer-bottom">
+  <span>© 2026 ColoniaPress · Ciudad de México</span>
+  <span>Impulsado por IA · Autonomía editorial total</span>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">✦ Cómo funciona ColoniaPress</div>
+    <div class="modal-sub">Sistema autónomo de periodismo hiperlocal</div>
+    <div class="modal-body">
+      <strong>1. Scraping automático</strong><br>
+      Cada 15 minutos rastrea 14 fuentes: El Universal, Milenio, La Jornada, GobCDMX y más.<br><br>
+      <strong>2. Clasificación por alcaldía</strong><br>
+      La IA detecta a qué alcaldía pertenece cada noticia con 94% de precisión.<br><br>
+      <strong>3. Reescritura editorial</strong><br>
+      Claude reescribe cada nota con voz propia de ColoniaPress, titular SEO y resumen para redes.<br><br>
+      <strong>4. Publicación automática</strong><br>
+      Sube al portal, genera tarjetas para Instagram y X, y envía el boletín matutino a las 6am.<br><br>
+      <strong>5. Pauta segmentada</strong><br>
+      Los anuncios se muestran según la alcaldía del lector. Anunciantes locales pueden comprar espacios directamente.
+    </div>
+    <button class="modal-close" onclick="closeModal()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const ALCALDIAS = ['Álvaro Obregón','Azcapotzalco','Benito Juárez','Coyoacán','Cuajimalpa','Cuauhtémoc','Gustavo A. Madero','Iztacalco','Iztapalapa','Magdalena Contreras','Miguel Hidalgo','Milpa Alta','Tláhuac','Tlalpan','Venustiano Carranza','Xochimilco'];
+
+const NEWS = {
+  'Cuauhtémoc':[
+    {k:'Movilidad',t:'Inician obras en Eje Central que afectarán tráfico por 3 semanas',m:'Hace 1h'},
+    {k:'Seguridad',t:'Instalan 40 nuevas cámaras C5 en la Colonia Doctores',m:'Hace 2h'},
+    {k:'Cultura',t:'El Museo de la Ciudad abre convocatoria para artistas locales',m:'Hace 3h'},
+    {k:'Servicios',t:'Poda y limpieza en Parque México este fin de semana',m:'Hace 4h'},
+  ],
+  'Iztapalapa':[
+    {k:'Agua',t:'Corte programado afectará 12 colonias este jueves',m:'Hace 40 min'},
+    {k:'Seguridad',t:'Nuevas luminarias LED en Unidad Habitacional Ejército de Oriente',m:'Hace 1h'},
+    {k:'Salud',t:'Módulos de salud gratuitos en el Mercado de Jamaica',m:'Hace 2h'},
+    {k:'Obras',t:'Rehabilitación de calles en Lomas de San Lorenzo',m:'Hace 5h'},
+  ],
+  'Benito Juárez':[
+    {k:'Transporte',t:'Metrobús línea 3 reporta demoras por falla técnica',m:'Hace 15 min'},
+    {k:'Comercio',t:'Nuevo corredor gastronómico en la Colonia Narvarte',m:'Hace 2h'},
+    {k:'Seguridad',t:'Operativos nocturnos reducen robos en Del Valle en 18%',m:'Hace 3h'},
+    {k:'Educación',t:'Escuelas reciben equipos de cómputo nuevos',m:'Hace 6h'},
+  ],
+};
+
+const BRIEFS = {
+  'Cuauhtémoc':[
+    {t:'Semáforo en Insurgentes y Álvaro Obregón fuera de servicio por segunda jornada',m:'Hace 30 min'},
+    {t:'Feria del Libro en el Zócalo registra más de 8,000 visitantes el primer día',m:'Hace 1h'},
+    {t:'Reposición de baldosas en la Alameda Central concluirá el viernes',m:'Hace 2h'},
+  ],
+  'Iztapalapa':[
+    {t:'Paro de labores en mercado de Iztapalapa por adeudo de servicios',m:'Hace 45 min'},
+    {t:'Jornada de limpieza en Canal Nacional con participación vecinal',m:'Hace 1h'},
+    {t:'Policía detiene banda de asaltantes que operaba en el Metro Guelatao',m:'Hace 3h'},
+  ],
+};
+
+const HEROES = {
+  'Cuauhtémoc':{k:'Movilidad urbana',t:'Amplían ciclovías en Reforma: 8 km nuevos conectan Chapultepec con el Centro Histórico',b:'La alcaldía Cuauhtémoc y la Secretaría de Movilidad anunciaron esta mañana la extensión de la red de ciclovías sobre Paseo de la Reforma. La obra conectará directamente el Bosque de Chapultepec con el Zócalo, reduciendo los tiempos de traslado en bicicleta de 45 a 18 minutos.'},
+  'Iztapalapa':{k:'Servicios públicos',t:'Nuevo programa garantiza agua potable las 24 horas en 6 colonias de Iztapalapa',b:'La alcaldesa presentó el Programa de Abasto Hídrico Continuo, que mediante redes de monitoreo inteligente y nuevas plantas de presión asegurará suministro permanente de agua potable en las colonias históricamente más afectadas.'},
+  'Benito Juárez':{k:'Urbanismo',t:'Alcaldía Benito Juárez aprueba el primer polígono libre de automóviles en la CDMX',b:'El Consejo de Alcaldía aprobó convertir un área de 6 manzanas entre Narvarte y Del Valle en zona peatonal permanente, destinando el espacio a jardines, ciclovías y comercio de barrio.'},
+};
+
+const TRENDING = ['Sismo 3.8 · Milpa Alta','Metro L12 · reapertura','Agua CDMX · cortes','Reforma ciclista 2026','Presupuesto alcaldías'];
+
+let currentAlc = 'Cuauhtémoc';
+
+function init(){
+  // Fecha
+  const d = new Date();
+  document.getElementById('topDate').textContent = d.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  renderAlcaldias();
+  renderTrending();
+  renderNews('Cuauhtémoc');
+}
+
+function renderAlcaldias(){
+  document.getElementById('alcGrid').innerHTML = ALCALDIAS.map(a=>
+    `<button class="alc-btn ${a===currentAlc?'on':''}" onclick="selectAlc('${a}')"><span class="alc-dot"></span>${a}</button>`
+  ).join('');
+}
+
+function renderTrending(){
+  document.getElementById('trending').innerHTML = TRENDING.map((t,i)=>
+    `<div class="tr-item"><div class="tr-rank">${i+1}</div><div class="tr-title">${t}</div></div>`
+  ).join('');
+}
+
+function renderNews(alc){
+  const news = NEWS[alc]||NEWS['Cuauhtémoc'];
+  document.getElementById('newsGrid').innerHTML = news.map(n=>
+    `<div class="nc"><div class="nc-k">${n.k}</div><div class="nc-img"></div><div class="nc-title">${n.t}</div><div class="nc-meta">${n.m} · <span class="ai-tag">✦ IA</span></div></div>`
+  ).join('');
+
+  const briefs = BRIEFS[alc]||BRIEFS['Cuauhtémoc'];
+  document.getElementById('briefsList').innerHTML = briefs.map((b,i)=>
+    `<div class="brief"><div class="brief-n">${i+1}</div><div><div class="brief-t">${b.t}</div><div class="brief-m">${b.m}</div></div></div>`
+  ).join('');
+
+  const h = HEROES[alc]||HEROES['Cuauhtémoc'];
+  document.getElementById('heroKicker').textContent = h.k;
+  document.getElementById('heroTitle').textContent = h.t;
+  document.getElementById('heroBody').textContent = h.b;
+}
+
+function selectAlc(a){
+  currentAlc = a;
+  document.getElementById('topAlc').textContent = '● '+a;
+  document.getElementById('locName').textContent = a;
+  document.getElementById('secLabel').textContent = 'Noticias destacadas · '+a;
+  renderAlcaldias();
+  renderNews(a);
+}
+
+function setNav(el,s){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function subscribe(){
+  const e = document.getElementById('emailInput').value;
+  if(!e) return;
+  document.querySelector('.nl-box').innerHTML = '<div class="nl-title" style="color:#6fcf97;">✓ ¡Listo!</div><div class="nl-sub" style="color:#aaa;">Recibirás noticias de '+currentAlc+' cada mañana.</div>';
+}
+
+function openModal(){ document.getElementById('modal').classList.add('open'); }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+
+init();
+</script>
+</body>
+</html>

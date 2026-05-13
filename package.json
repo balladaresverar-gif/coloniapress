@@ -1,0 +1,30 @@
+{
+  "name": "coloniapress",
+  "version": "1.0.0",
+  "description": "Medio de comunicación hiperlocal de la CDMX impulsado por IA",
+  "main": "backend/server.js",
+  "scripts": {
+    "start":       "node backend/server.js",
+    "dev":         "nodemon backend/server.js",
+    "scrape":      "node backend/orchestrator.js",
+    "scrape:once": "node -e \"require('./backend/orchestrator').runCycle().then(console.log)\"",
+    "db:init":     "node -e \"require('./backend/database').getDB()\"",
+    "test":        "node backend/scraper.js"
+  },
+  "dependencies": {
+    "better-sqlite3":  "^9.4.3",
+    "cors":            "^2.8.5",
+    "dotenv":          "^16.4.5",
+    "express":         "^4.18.3",
+    "twitter-api-v2":  "^1.17.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["cdmx", "periodismo", "hiperlocal", "noticias", "ia", "alcaldias"],
+  "author": "ColoniaPress",
+  "license": "UNLICENSED"
+}
