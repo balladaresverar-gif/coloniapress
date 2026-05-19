@@ -228,9 +228,5 @@ app.listen(PORT, () => {
   console.log(`  Dashboard: http://localhost:${PORT}/api/admin/dashboard`);
   console.log(`  Sitemap:   http://localhost:${PORT}/sitemap.xml\n`);
 });
-// Iniciar scraping automático
-const { runCycle } = require('./orchestrator');
-runCycle().catch(console.error);
-setInterval(() => runCycle().catch(console.error), 15 * 60 * 1000);
 
 module.exports = app;
