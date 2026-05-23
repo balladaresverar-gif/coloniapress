@@ -139,9 +139,9 @@ const Articles = {
       )
       -- ON CONFLICT DO NOTHING
         status=excluded.status,
-        headline=excluded.headline, body=excluded.body,
-        status=excluded.status, published_at=datetime('now'), rewritten_at=excluded.rewritten_at,
-        social_tweet=excluded.social_tweet, social_instagram=excluded.social_instagram
+        
+         rewritten_at=excluded.rewritten_at,
+        // */
     `);
     return stmt.run({ ...article, tags, source_weight: article.sourceWeight || 5, geo_confidence: article.geoConfidence || 0 });
   },
