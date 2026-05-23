@@ -202,7 +202,7 @@ async function scrapeAll() {
           category:    classifyCategory(fullText),
           pubDate:     item.pubDate || new Date().toISOString(),
           scrapedAt:   new Date().toISOString(),
-          status:      'pending_rewrite', // → 'published' después de IA
+          status: 'published',
         });
       }
 
