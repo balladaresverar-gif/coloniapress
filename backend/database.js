@@ -138,6 +138,7 @@ const Articles = {
         @pub_date, @scraped_at, @rewritten_at, @status, @reading_time
       )
       ON CONFLICT(id) DO UPDATE SET
+        status=excluded.status,
         headline=excluded.headline, body=excluded.body,
         status=excluded.status, published_at=datetime('now'), rewritten_at=excluded.rewritten_at,
         social_tweet=excluded.social_tweet, social_instagram=excluded.social_instagram
