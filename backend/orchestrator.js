@@ -2,7 +2,7 @@
  * ColoniaPress — Orquestador Principal
  * Este es el corazón del sistema autónomo.
  * Ejecutar con: node orchestrator.js
- * En producción: PM2 con cron "*/15 * * * *"
+ * En producción: PM2 con cron cada 15 minutos
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '../config/.env') });
