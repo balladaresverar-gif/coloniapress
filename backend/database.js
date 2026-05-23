@@ -126,7 +126,7 @@ const Articles = {
     const db = getDB();
     const tags = Array.isArray(article.tags) ? article.tags.join(',') : (article.tags || '');
     const stmt = db.prepare(`
-      INSERT INTO articles (
+      INSERT OR REPLACE INTO articles (
         id, title, headline, subheadline, body, summary, description,
         url, source, source_weight, alcaldia, geo_confidence, category,
         urgency, seo_title, tags, social_tweet, social_instagram, social_facebook,
@@ -137,7 +137,7 @@ const Articles = {
         @urgency, @seo_title, @tags, @social_tweet, @social_instagram, @social_facebook,
         @pub_date, @scraped_at, @rewritten_at, @status, @reading_time
       )
-      ON CONFLICT(id) DO UPDATE SET
+      -- ON CONFLICT DO NOTHING
         status=excluded.status,
         headline=excluded.headline, body=excluded.body,
         status=excluded.status, published_at=datetime('now'), rewritten_at=excluded.rewritten_at,
