@@ -50,7 +50,7 @@ function initSchema() {
       scraped_at    TEXT,
       rewritten_at  TEXT,
       published_at  TEXT,
-      status        TEXT DEFAULT 'pending_rewrite',
+      status        TEXT DEFAULT 'published',
       views         INTEGER DEFAULT 0,
       shares        INTEGER DEFAULT 0,
       reading_time  INTEGER DEFAULT 2,
@@ -139,7 +139,7 @@ const Articles = {
       )
       ON CONFLICT(id) DO UPDATE SET
         headline=excluded.headline, body=excluded.body,
-        status=excluded.status, rewritten_at=excluded.rewritten_at,
+        status=excluded.status, published_at=datetime('now'), rewritten_at=excluded.rewritten_at,
         social_tweet=excluded.social_tweet, social_instagram=excluded.social_instagram
     `);
     return stmt.run({ ...article, tags, source_weight: article.sourceWeight || 5, geo_confidence: article.geoConfidence || 0 });
