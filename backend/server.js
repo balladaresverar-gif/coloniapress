@@ -223,10 +223,17 @@ app.get('*', (req, res) => {
 });
 
 // ─── ARRANQUE ─────────────────────────────────────────────────────────────────
+
+module.exports = app;
 app.listen(PORT, () => {
   console.log(`\n  ColoniaPress API corriendo en http://localhost:${PORT}`);
   console.log(`  Dashboard: http://localhost:${PORT}/api/admin/dashboard`);
   console.log(`  Sitemap:   http://localhost:${PORT}/sitemap.xml\n`);
-});
 
-module.exports = app;
+  // Iniciar orchestrator automáticamente
+  const { runCycle } = require('./orchestrator');
+  const INTERVAL_MS = parseInt(process.env.SCRAPE_INTERVAL_MIN || '15') * 60 * 1000;
+  console.log(`  Scraper: ciclo cada ${INTERVAL_MS/60000} minutos\n`);
+  runCycle().catch(console.error);
+  setInterval(() => runCycle().catch(console.error), INTERVAL_MS);
+});
