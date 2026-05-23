@@ -10,7 +10,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../config/.env
 const { scrapeAll } = require('./scraper');
 const { rewriteBatch, generateDailySummary } = require('./ai-editorial');
 const { Articles, Analytics, getDB } = require('./database');
-const { publishToSocial } = require('./social-publisher');
+// const { publishToSocial } = require('./social-publisher');
 const { sendDailyNewsletter } = require('./newsletter');
 
 const START = Date.now();
@@ -58,8 +58,8 @@ async function runCycle() {
     // ── PASO 3: REDES SOCIALES ────────────────────────────────────────────
     console.log('[ 3/5 ] Publicando en redes sociales...');
     const toPost = Articles.getLatestAll(10).filter(a => !a.social_posted);
-    const socialResults = await publishToSocial(toPost);
-    stats.social = socialResults.posted;
+    // const socialResults = await publishToSocial(toPost);
+    // stats.social = socialResults.posted;
     console.log(`        ✓ ${socialResults.posted} posts publicados\n`);
 
     // ── PASO 4: NEWSLETTER (solo 6am CDMX) ────────────────────────────────
