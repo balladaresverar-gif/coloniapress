@@ -52,12 +52,11 @@ const SOURCES = [
     weight: 6,
     type: 'rss'
   },
-  // Fuentes por alcaldía (sitios oficiales)
-  { name: 'Alcaldía Cuauhtémoc', url: 'https://cuauhtemoc.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Cuauhtémoc' },
-  { name: 'Alcaldía Iztapalapa', url: 'https://www.iztapalapa.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Iztapalapa' },
-  { name: 'Alcaldía Benito Juárez', url: 'https://benitojuarez.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Benito Juárez' },
-  { name: 'Alcaldía Miguel Hidalgo', url: 'https://miguelhidalgo.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Miguel Hidalgo' },
-  { name: 'Alcaldía Coyoacán', url: 'https://coyoacan.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Coyoacán' },
+  { name: 'Alcaldía Cuauhtémoc',    url: 'https://cuauhtemoc.cdmx.gob.mx/rss',         weight: 10, type: 'rss', alcaldia: 'Cuauhtémoc' },
+  { name: 'Alcaldía Iztapalapa',    url: 'https://www.iztapalapa.cdmx.gob.mx/rss',     weight: 10, type: 'rss', alcaldia: 'Iztapalapa' },
+  { name: 'Alcaldía Benito Juárez', url: 'https://benitojuarez.cdmx.gob.mx/rss',       weight: 10, type: 'rss', alcaldia: 'Benito Juárez' },
+  { name: 'Alcaldía Miguel Hidalgo',url: 'https://miguelhidalgo.cdmx.gob.mx/rss',      weight: 10, type: 'rss', alcaldia: 'Miguel Hidalgo' },
+  { name: 'Alcaldía Coyoacán',      url: 'https://coyoacan.cdmx.gob.mx/rss',           weight: 10, type: 'rss', alcaldia: 'Coyoacán' },
 ];
 
 // ─── PALABRAS CLAVE POR ALCALDÍA ─────────────────────────────────────────────
@@ -188,21 +187,21 @@ async function scrapeAll() {
           ? { alcaldia: source.alcaldia, confidence: 10 }
           : classifyAlcaldia(fullText);
 
-        if (!geoResult) continue; // Solo noticias de CDMX detectables
+        if (!geoResult) continue;
 
         allArticles.push({
-          id:          `${Date.now()}-${Math.random().toString(36).substr(2,6)}`,
-          title:       item.title,
-          description: item.description,
-          url:         item.link,
-          source:      source.name,
+          id:           `${Date.now()}-${Math.random().toString(36).substr(2,6)}`,
+          title:        item.title,
+          description:  item.description,
+          url:          item.link,
+          source:       source.name,
           sourceWeight: source.weight,
-          alcaldia:    geoResult.alcaldia,
+          alcaldia:     geoResult.alcaldia,
           geoConfidence: geoResult.confidence,
-          category:    classifyCategory(fullText),
-          pubDate:     item.pubDate || new Date().toISOString(),
-          scrapedAt:   new Date().toISOString(),
-          status: 'published',
+          category:     classifyCategory(fullText),
+          pubDate:      item.pubDate || new Date().toISOString(),
+          scrapedAt:    new Date().toISOString(),
+          status:       'pending_rewrite',
         });
       }
 
