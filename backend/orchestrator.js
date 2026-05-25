@@ -1,30 +1,16 @@
-/**
- * ColoniaPress — Orquestador Principal
- * Este es el corazón del sistema autónomo.
- * Ejecutar con: node orchestrator.js
- * En producción: PM2 con cron cada 15 minutos
- */
-
 require('dotenv').config({ path: require('path').join(__dirname, '../config/.env') });
 
 const { scrapeAll } = require('./scraper');
 const { rewriteBatch, generateDailySummary } = require('./ai-editorial');
-const { Articles, Analytics, getDB } = require('./database');
-// const { publishToSocial } = require('./social-publisher');
+const { Articles, getDB } = require('./database');
 const { sendDailyNewsletter } = require('./newsletter');
 
-const START = Date.now();
-
-// ─── CICLO PRINCIPAL ──────────────────────────────────────────────────────────
 async function runCycle() {
   console.log('\n══════════════════════════════════════════');
   console.log(`  ColoniaPress — Ciclo ${new Date().toLocaleString('es-MX')}`);
   console.log('══════════════════════════════════════════\n');
 
   const stats = { scraped: 0, rewritten: 0, published: 0, social: 0, errors: [] };
-
-  // RESET TEMPORAL — fuerza reescritura de todos los artículos
-  getDB().prepare("UPDATE articles SET status='pending_rewrite'").run();
 
   try {
     // ── PASO 1: SCRAPING ──────────────────────────────────────────────────
@@ -46,7 +32,6 @@ async function runCycle() {
       console.log('        → Sin artículos pendientes\n');
     } else {
       const rewritten = await rewriteBatch(pending, 3);
-
       for (const article of rewritten) {
         if (article.status === 'published') {
           Articles.upsert(article);
@@ -59,12 +44,10 @@ async function runCycle() {
 
     // ── PASO 3: REDES SOCIALES ────────────────────────────────────────────
     console.log('[ 3/5 ] Publicando en redes sociales...');
-    const toPost = Articles.getLatestAll(10).filter(a => !a.social_posted);
-    // const socialResults = await publishToSocial(toPost);
     stats.social = 0;
     console.log(`        ✓ ${stats.social} posts publicados\n`);
 
-    // ── PASO 4: NEWSLETTER (solo 6am CDMX) ────────────────────────────────
+    // ── PASO 4: NEWSLETTER ────────────────────────────────────────────────
     const hour = new Date().getHours();
     if (hour === 6) {
       console.log('[ 4/5 ] Enviando boletines matutinos...');
@@ -108,15 +91,18 @@ async function runCycle() {
   return stats;
 }
 
-// ─── MODO DAEMON (PM2 / producción) ──────────────────────────────────────────
+const START = Date.now();
+
 if (require.main === module) {
   const INTERVAL_MS = parseInt(process.env.SCRAPE_INTERVAL_MIN || '15') * 60 * 1000;
-
   console.log(`ColoniaPress arrancando...`);
   console.log(`Intervalo de scraping: ${INTERVAL_MS / 60000} minutos`);
 
-  runCycle().catch(console.error);
+  // Resetear artículos viejos UNA SOLA VEZ al arrancar
+  console.log('Reseteando artículos a pending_rewrite...');
+  getDB().prepare("UPDATE articles SET status='pending_rewrite' WHERE status='published'").run();
 
+  runCycle().catch(console.error);
   setInterval(() => runCycle().catch(console.error), INTERVAL_MS);
 }
 
