@@ -23,6 +23,9 @@ async function runCycle() {
 
   const stats = { scraped: 0, rewritten: 0, published: 0, social: 0, errors: [] };
 
+  // RESET TEMPORAL — fuerza reescritura de todos los artículos
+  getDB().prepare("UPDATE articles SET status='pending_rewrite'").run();
+
   try {
     // ── PASO 1: SCRAPING ──────────────────────────────────────────────────
     console.log('[ 1/5 ] Raspando fuentes...');
@@ -30,7 +33,6 @@ async function runCycle() {
     stats.scraped = articles.length;
     stats.errors.push(...scrapeErrors);
 
-    // Guardar artículos crudos en DB
     for (const article of articles) {
       try { Articles.upsert(article); } catch(e) {}
     }
@@ -39,12 +41,12 @@ async function runCycle() {
     // ── PASO 2: REESCRITURA IA ────────────────────────────────────────────
     console.log('[ 2/5 ] Reescribiendo con IA editorial...');
     const pending = Articles.getPending(20);
-    
+
     if (pending.length === 0) {
       console.log('        → Sin artículos pendientes\n');
     } else {
       const rewritten = await rewriteBatch(pending, 3);
-      
+
       for (const article of rewritten) {
         if (article.status === 'published') {
           Articles.upsert(article);
@@ -59,7 +61,6 @@ async function runCycle() {
     console.log('[ 3/5 ] Publicando en redes sociales...');
     const toPost = Articles.getLatestAll(10).filter(a => !a.social_posted);
     // const socialResults = await publishToSocial(toPost);
-    // stats.social = socialResults.posted;
     stats.social = 0;
     console.log(`        ✓ ${stats.social} posts publicados\n`);
 
@@ -110,14 +111,12 @@ async function runCycle() {
 // ─── MODO DAEMON (PM2 / producción) ──────────────────────────────────────────
 if (require.main === module) {
   const INTERVAL_MS = parseInt(process.env.SCRAPE_INTERVAL_MIN || '15') * 60 * 1000;
-  
+
   console.log(`ColoniaPress arrancando...`);
   console.log(`Intervalo de scraping: ${INTERVAL_MS / 60000} minutos`);
-  
-  // Ejecutar inmediatamente al arrancar
+
   runCycle().catch(console.error);
-  
-  // Luego repetir cada N minutos
+
   setInterval(() => runCycle().catch(console.error), INTERVAL_MS);
 }
 
