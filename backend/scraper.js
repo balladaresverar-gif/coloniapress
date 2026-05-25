@@ -1,98 +1,58 @@
 /**
  * ColoniaPress — Motor de Scraping
- * Corre cada 15 minutos via cron o PM2
- * Fuentes: El Universal, Milenio, La Jornada, GobCDMX, alcaldías
  */
 
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
+const crypto = require('crypto');
 
-// ─── FUENTES DE NOTICIAS ────────────────────────────────────────────────────
 const SOURCES = [
-  {
-    name: 'El Universal CDMX',
-    url: 'https://news.google.com/rss/search?q=El+Universal+CDMX+noticias&hl=es-419&gl=MX&ceid=MX:es-419',
-    weight: 10,
-    type: 'rss'
-  },
-  {
-    name: 'Milenio CDMX',
-    url: 'https://news.google.com/rss/search?q=Milenio+CDMX+noticias&hl=es-419&gl=MX&ceid=MX:es-419',
-    weight: 9,
-    type: 'rss'
-  },
-  {
-    name: 'La Jornada',
-    url: 'https://news.google.com/rss/search?q=La+Jornada+CDMX+noticias&hl=es-419&gl=MX&ceid=MX:es-419',
-    weight: 9,
-    type: 'rss'
-  },
-  {
-    name: 'GobCDMX',
-    url: 'https://www.cdmx.gob.mx/rss',
-    weight: 10,
-    type: 'rss'
-  },
-  {
-    name: 'Infobae México',
-    url: 'https://www.infobae.com/feeds/rss/mexico/',
-    weight: 7,
-    type: 'rss'
-  },
-  {
-    name: 'Animal Político',
-    url: 'https://animalpolitico.com/feed',
-    weight: 8,
-    type: 'rss'
-  },
-  {
-    name: 'Chilango',
-    url: 'https://www.chilango.com/feed/',
-    weight: 6,
-    type: 'rss'
-  },
-  { name: 'Alcaldía Cuauhtémoc',    url: 'https://cuauhtemoc.cdmx.gob.mx/rss',         weight: 10, type: 'rss', alcaldia: 'Cuauhtémoc' },
-  { name: 'Alcaldía Iztapalapa',    url: 'https://www.iztapalapa.cdmx.gob.mx/rss',     weight: 10, type: 'rss', alcaldia: 'Iztapalapa' },
-  { name: 'Alcaldía Benito Juárez', url: 'https://benitojuarez.cdmx.gob.mx/rss',       weight: 10, type: 'rss', alcaldia: 'Benito Juárez' },
-  { name: 'Alcaldía Miguel Hidalgo',url: 'https://miguelhidalgo.cdmx.gob.mx/rss',      weight: 10, type: 'rss', alcaldia: 'Miguel Hidalgo' },
-  { name: 'Alcaldía Coyoacán',      url: 'https://coyoacan.cdmx.gob.mx/rss',           weight: 10, type: 'rss', alcaldia: 'Coyoacán' },
+  { name: 'El Universal CDMX', url: 'https://news.google.com/rss/search?q=El+Universal+CDMX+noticias&hl=es-419&gl=MX&ceid=MX:es-419', weight: 10, type: 'rss' },
+  { name: 'Milenio CDMX', url: 'https://news.google.com/rss/search?q=Milenio+CDMX+noticias&hl=es-419&gl=MX&ceid=MX:es-419', weight: 9, type: 'rss' },
+  { name: 'La Jornada', url: 'https://news.google.com/rss/search?q=La+Jornada+CDMX+noticias&hl=es-419&gl=MX&ceid=MX:es-419', weight: 9, type: 'rss' },
+  { name: 'GobCDMX', url: 'https://www.cdmx.gob.mx/rss', weight: 10, type: 'rss' },
+  { name: 'Infobae México', url: 'https://www.infobae.com/feeds/rss/mexico/', weight: 7, type: 'rss' },
+  { name: 'Animal Político', url: 'https://animalpolitico.com/feed', weight: 8, type: 'rss' },
+  { name: 'Chilango', url: 'https://www.chilango.com/feed/', weight: 6, type: 'rss' },
+  { name: 'Alcaldía Cuauhtémoc', url: 'https://cuauhtemoc.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Cuauhtémoc' },
+  { name: 'Alcaldía Iztapalapa', url: 'https://www.iztapalapa.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Iztapalapa' },
+  { name: 'Alcaldía Benito Juárez', url: 'https://benitojuarez.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Benito Juárez' },
+  { name: 'Alcaldía Miguel Hidalgo', url: 'https://miguelhidalgo.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Miguel Hidalgo' },
+  { name: 'Alcaldía Coyoacán', url: 'https://coyoacan.cdmx.gob.mx/rss', weight: 10, type: 'rss', alcaldia: 'Coyoacán' },
 ];
 
-// ─── PALABRAS CLAVE POR ALCALDÍA ─────────────────────────────────────────────
 const ALCALDIA_KEYWORDS = {
-  'Álvaro Obregón':       ['álvaro obregón', 'santa fe', 'olivar del conde', 'las águilas', 'tizapán', 'san ángel'],
-  'Azcapotzalco':         ['azcapotzalco', 'vallejo', 'san marcos', 'tlanepantla', 'pasteros'],
-  'Benito Juárez':        ['benito juárez', 'narvarte', 'del valle', 'portales', 'crédito constructor', 'eje 8'],
-  'Coyoacán':             ['coyoacán', 'pedregal', 'copilco', 'viveros', 'churubusco', 'tepepan'],
-  'Cuajimalpa':           ['cuajimalpa', 'santa rosa xochiac', 'contadero', 'lomas de bezares'],
-  'Cuauhtémoc':           ['cuauhtémoc', 'centro histórico', 'reforma', 'doctores', 'guerrero', 'santa maría la ribera', 'tabacalera', 'zócalo', 'alameda'],
-  'Gustavo A. Madero':    ['gustavo a. madero', 'gam', 'lindavista', 'tepito', 'la villa', 'basílica'],
-  'Iztacalco':            ['iztacalco', 'agrícola oriental', 'pantitlán', 'jardín balbuena'],
-  'Iztapalapa':           ['iztapalapa', 'canal de chalco', 'ermita', 'peñón de los baños', 'santa cruz meyehualco'],
-  'Magdalena Contreras':  ['magdalena contreras', 'san jerónimo', 'lomas del pedregal'],
-  'Miguel Hidalgo':       ['miguel hidalgo', 'polanco', 'chapultepec', 'lomas de chapultepec', 'anzures', 'tacuba'],
-  'Milpa Alta':           ['milpa alta', 'san pedro atocpan', 'villa milpa alta'],
-  'Tláhuac':              ['tláhuac', 'san pedro tláhuac', 'la nopalera', 'zapotitla'],
-  'Tlalpan':              ['tlalpan', 'pedregal de san ángel', 'ajusco', 'isidro fabela'],
-  'Venustiano Carranza':  ['venustiano carranza', 'buenavista', 'tepito', 'merced', 'morelos'],
-  'Xochimilco':           ['xochimilco', 'trajineras', 'san gregorio atlapulco', 'tulyehualco'],
+  'Álvaro Obregón':      ['álvaro obregón', 'santa fe', 'olivar del conde', 'las águilas', 'tizapán', 'san ángel'],
+  'Azcapotzalco':        ['azcapotzalco', 'vallejo', 'san marcos', 'tlanepantla', 'pasteros'],
+  'Benito Juárez':       ['benito juárez', 'narvarte', 'del valle', 'portales', 'crédito constructor', 'eje 8'],
+  'Coyoacán':            ['coyoacán', 'pedregal', 'copilco', 'viveros', 'churubusco', 'tepepan'],
+  'Cuajimalpa':          ['cuajimalpa', 'santa rosa xochiac', 'contadero', 'lomas de bezares'],
+  'Cuauhtémoc':          ['cuauhtémoc', 'centro histórico', 'reforma', 'doctores', 'guerrero', 'santa maría la ribera', 'tabacalera', 'zócalo', 'alameda'],
+  'Gustavo A. Madero':   ['gustavo a. madero', 'gam', 'lindavista', 'tepito', 'la villa', 'basílica'],
+  'Iztacalco':           ['iztacalco', 'agrícola oriental', 'pantitlán', 'jardín balbuena'],
+  'Iztapalapa':          ['iztapalapa', 'canal de chalco', 'ermita', 'peñón de los baños', 'santa cruz meyehualco'],
+  'Magdalena Contreras': ['magdalena contreras', 'san jerónimo', 'lomas del pedregal'],
+  'Miguel Hidalgo':      ['miguel hidalgo', 'polanco', 'chapultepec', 'lomas de chapultepec', 'anzures', 'tacuba'],
+  'Milpa Alta':          ['milpa alta', 'san pedro atocpan', 'villa milpa alta'],
+  'Tláhuac':             ['tláhuac', 'san pedro tláhuac', 'la nopalera', 'zapotitla'],
+  'Tlalpan':             ['tlalpan', 'pedregal de san ángel', 'ajusco', 'isidro fabela'],
+  'Venustiano Carranza': ['venustiano carranza', 'buenavista', 'tepito', 'merced', 'morelos'],
+  'Xochimilco':          ['xochimilco', 'trajineras', 'san gregorio atlapulco', 'tulyehualco'],
 };
 
-// ─── CATEGORÍAS DE NOTICIAS ──────────────────────────────────────────────────
 const CATEGORIES = {
-  'seguridad':   ['robo', 'asalto', 'violencia', 'policía', 'delito', 'crimen', 'operativo', 'detenido', 'captura'],
-  'movilidad':   ['tráfico', 'vialidad', 'metrobús', 'metro', 'ciclovia', 'transporte', 'tren', 'bici', 'semáforo'],
-  'servicios':   ['agua', 'luz', 'drenaje', 'basura', 'recolección', 'bacheo', 'poda', 'alumbrado'],
-  'salud':       ['hospital', 'clínica', 'vacuna', 'salud', 'médico', 'enfermedad', 'imss', 'issste'],
-  'cultura':     ['museo', 'teatro', 'festival', 'exposición', 'concierto', 'arte', 'patrimonio'],
-  'educación':   ['escuela', 'colegio', 'universidad', 'estudiantes', 'educación', 'docentes'],
-  'obras':       ['obra', 'construcción', 'rehabilitación', 'pavimentación', 'rehabilitar'],
-  'política':    ['alcaldía', 'gobierno', 'presupuesto', 'sesión', 'diputado', 'partido'],
-  'economía':    ['comercio', 'mercado', 'negocio', 'empleo', 'trabajo', 'empresa'],
+  'seguridad':  ['robo', 'asalto', 'violencia', 'policía', 'delito', 'crimen', 'operativo', 'detenido', 'captura'],
+  'movilidad':  ['tráfico', 'vialidad', 'metrobús', 'metro', 'ciclovia', 'transporte', 'tren', 'bici', 'semáforo'],
+  'servicios':  ['agua', 'luz', 'drenaje', 'basura', 'recolección', 'bacheo', 'poda', 'alumbrado'],
+  'salud':      ['hospital', 'clínica', 'vacuna', 'salud', 'médico', 'enfermedad', 'imss', 'issste'],
+  'cultura':    ['museo', 'teatro', 'festival', 'exposición', 'concierto', 'arte', 'patrimonio'],
+  'educación':  ['escuela', 'colegio', 'universidad', 'estudiantes', 'educación', 'docentes'],
+  'obras':      ['obra', 'construcción', 'rehabilitación', 'pavimentación', 'rehabilitar'],
+  'política':   ['alcaldía', 'gobierno', 'presupuesto', 'sesión', 'diputado', 'partido'],
+  'economía':   ['comercio', 'mercado', 'negocio', 'empleo', 'trabajo', 'empresa'],
 };
 
-// ─── FETCH GENÉRICO ──────────────────────────────────────────────────────────
 function fetchURL(urlStr, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
     try {
@@ -111,7 +71,6 @@ function fetchURL(urlStr, timeoutMs = 10000) {
   });
 }
 
-// ─── PARSER RSS SIMPLE ───────────────────────────────────────────────────────
 function parseRSS(xml) {
   const items = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
@@ -134,7 +93,6 @@ function parseRSS(xml) {
   return items;
 }
 
-// ─── CLASIFICADOR POR ALCALDÍA ───────────────────────────────────────────────
 function classifyAlcaldia(text) {
   const lower = text.toLowerCase();
   const scores = {};
@@ -147,7 +105,6 @@ function classifyAlcaldia(text) {
   return best && best[1] > 0 ? { alcaldia: best[0], confidence: best[1] } : null;
 }
 
-// ─── CLASIFICADOR DE CATEGORÍA ───────────────────────────────────────────────
 function classifyCategory(text) {
   const lower = text.toLowerCase();
   const scores = {};
@@ -158,22 +115,15 @@ function classifyCategory(text) {
   return best && best[1] > 0 ? best[0] : 'general';
 }
 
-// ─── DEDUPLICACIÓN ───────────────────────────────────────────────────────────
-function deduplicateArticles(articles) {
-  const seen = new Set();
-  return articles.filter(a => {
-    const key = a.title.toLowerCase().substring(0, 60).replace(/\s+/g, ' ');
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+function makeId(url, title) {
+  return crypto.createHash('md5').update((url || title || '').trim()).digest('hex').substring(0, 16);
 }
 
-// ─── SCRAPER PRINCIPAL ────────────────────────────────────────────────────────
 async function scrapeAll() {
   console.log(`[ColoniaPress] Iniciando scraping — ${new Date().toISOString()}`);
   const allArticles = [];
   const errors = [];
+  const seenIds = new Set();
 
   for (const source of SOURCES) {
     try {
@@ -189,8 +139,12 @@ async function scrapeAll() {
 
         if (!geoResult) continue;
 
+        const id = makeId(item.link, item.title);
+        if (seenIds.has(id)) continue;
+        seenIds.add(id);
+
         allArticles.push({
-          id:           `${Date.now()}-${Math.random().toString(36).substr(2,6)}`,
+          id,
           title:        item.title,
           description:  item.description,
           url:          item.link,
@@ -212,11 +166,10 @@ async function scrapeAll() {
     }
   }
 
-  const unique = deduplicateArticles(allArticles);
-  console.log(`[ColoniaPress] Total: ${unique.length} artículos únicos de CDMX`);
+  console.log(`[ColoniaPress] Total: ${allArticles.length} artículos únicos de CDMX`);
   if (errors.length) console.warn(`[ColoniaPress] ${errors.length} fuentes fallidas`);
 
-  return { articles: unique, errors, scrapedAt: new Date().toISOString() };
+  return { articles: allArticles, errors, scrapedAt: new Date().toISOString() };
 }
 
 module.exports = { scrapeAll, classifyAlcaldia, classifyCategory, ALCALDIA_KEYWORDS, CATEGORIES };
