@@ -38,7 +38,7 @@ async function runCycle() {
 
     // ── PASO 2: REESCRITURA IA ────────────────────────────────────────────
     console.log('[ 2/5 ] Reescribiendo con IA editorial...');
-    const pending = Articles.getPending(20); // Máx 20 por ciclo para controlar costos
+    const pending = Articles.getPending(20);
     
     if (pending.length === 0) {
       console.log('        → Sin artículos pendientes\n');
@@ -60,7 +60,8 @@ async function runCycle() {
     const toPost = Articles.getLatestAll(10).filter(a => !a.social_posted);
     // const socialResults = await publishToSocial(toPost);
     // stats.social = socialResults.posted;
-    console.log(`        ✓ ${socialResults.posted} posts publicados\n`);
+    stats.social = 0;
+    console.log(`        ✓ ${stats.social} posts publicados\n`);
 
     // ── PASO 4: NEWSLETTER (solo 6am CDMX) ────────────────────────────────
     const hour = new Date().getHours();
