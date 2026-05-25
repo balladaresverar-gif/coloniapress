@@ -115,7 +115,10 @@ const Articles = {
         @urgency, @seo_title, @tags, @social_tweet, @social_instagram, @social_facebook,
         @pub_date, @scraped_at, @rewritten_at, @status, @reading_time
       )
-      ON CONFLICT(id) DO NOTHING
+      ON CONFLICT(id) DO UPDATE SET
+        status = CASE WHEN articles.status = 'published' THEN 'pending_rewrite' ELSE articles.status END,
+        title = excluded.title,
+        scraped_at = excluded.scraped_at
     `);
     return stmt.run({
       ...article,
