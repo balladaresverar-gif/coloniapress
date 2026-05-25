@@ -50,7 +50,7 @@ function initSchema() {
       scraped_at    TEXT,
       rewritten_at  TEXT,
       published_at  TEXT,
-      status        TEXT DEFAULT 'published',
+      status        TEXT DEFAULT 'pending_rewrite',
       views         INTEGER DEFAULT 0,
       shares        INTEGER DEFAULT 0,
       reading_time  INTEGER DEFAULT 2,
@@ -126,7 +126,7 @@ const Articles = {
     const db = getDB();
     const tags = Array.isArray(article.tags) ? article.tags.join(',') : (article.tags || '');
     const stmt = db.prepare(`
-      INSERT OR REPLACE INTO articles (
+      INSERT INTO articles (
         id, title, headline, subheadline, body, summary, description,
         url, source, source_weight, alcaldia, geo_confidence, category,
         urgency, seo_title, tags, social_tweet, social_instagram, social_facebook,
@@ -137,13 +137,17 @@ const Articles = {
         @urgency, @seo_title, @tags, @social_tweet, @social_instagram, @social_facebook,
         @pub_date, @scraped_at, @rewritten_at, @status, @reading_time
       )
-      -- ON CONFLICT DO NOTHING
-        status=excluded.status,
-        
-         rewritten_at=excluded.rewritten_at,
-        // */
+      ON CONFLICT(id) DO UPDATE SET
+        status = CASE WHEN excluded.status = 'published' THEN articles.status ELSE excluded.status END,
+        rewritten_at = excluded.rewritten_at
     `);
-    return stmt.run({ ...article, tags, source_weight: article.sourceWeight || 5, geo_confidence: article.geoConfidence || 0 });
+    return stmt.run({
+      ...article,
+      tags,
+      source_weight: article.sourceWeight || 5,
+      geo_confidence: article.geoConfidence || 0,
+      status: article.status || 'pending_rewrite'
+    });
   },
 
   getByAlcaldia(alcaldia, limit = 20, offset = 0) {
