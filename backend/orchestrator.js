@@ -20,13 +20,20 @@ async function runCycle() {
     stats.errors.push(...scrapeErrors);
 
     for (const article of articles) {
-      try { Articles.upsert(article); } catch(e) {}
+      try { Articles.upsert(article); } catch(e) { console.error('upsert error:', e.message); }
     }
     console.log(`        ✓ ${articles.length} artículos nuevos encontrados\n`);
+
+    // ── DEBUG ─────────────────────────────────────────────────────────────
+    const totalDB = getDB().prepare("SELECT COUNT(*) as n FROM articles").get().n;
+    const pendingDB = getDB().prepare("SELECT COUNT(*) as n FROM articles WHERE status='pending_rewrite'").get().n;
+    const publishedDB = getDB().prepare("SELECT COUNT(*) as n FROM articles WHERE status='published'").get().n;
+    console.log(`        [DEBUG] Total en DB: ${totalDB} | pending_rewrite: ${pendingDB} | published: ${publishedDB}`);
 
     // ── PASO 2: REESCRITURA IA ────────────────────────────────────────────
     console.log('[ 2/5 ] Reescribiendo con IA editorial...');
     const pending = Articles.getPending(20);
+    console.log(`        [DEBUG] getPending devolvió: ${pending.length}`);
 
     if (pending.length === 0) {
       console.log('        → Sin artículos pendientes\n');
@@ -92,18 +99,5 @@ async function runCycle() {
 }
 
 const START = Date.now();
-
-if (require.main === module) {
-  const INTERVAL_MS = parseInt(process.env.SCRAPE_INTERVAL_MIN || '15') * 60 * 1000;
-  console.log(`ColoniaPress arrancando...`);
-  console.log(`Intervalo de scraping: ${INTERVAL_MS / 60000} minutos`);
-
-  // Resetear artículos viejos UNA SOLA VEZ al arrancar
-  console.log('Reseteando artículos a pending_rewrite...');
-  getDB().prepare("UPDATE articles SET status='pending_rewrite' WHERE status='published'").run();
-
-  runCycle().catch(console.error);
-  setInterval(() => runCycle().catch(console.error), INTERVAL_MS);
-}
 
 module.exports = { runCycle };
