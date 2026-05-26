@@ -1,15 +1,12 @@
 /**
  * ColoniaPress — Motor Editorial IA
- * Reescribe noticias con voz propia, genera SEO, titulares y contenido para redes
- * Usa Claude API (claude-sonnet-4-20250514)
  */
 
 const https = require('https');
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const MODEL = 'claude-sonnet-4-20250514';
+const MODEL = 'claude-sonnet-4-5';
 
-// ─── VOZ EDITORIAL DE COLONIAPRESS ───────────────────────────────────────────
 const EDITORIAL_VOICE = `
 Eres el editor jefe de ColoniaPress, un periódico digital hiperlocal de la Ciudad de México.
 
@@ -25,7 +22,6 @@ Tu voz editorial tiene estas características:
 ColoniaPress cubre las 16 alcaldías de la CDMX con noticias hiperlocales.
 `;
 
-// ─── LLAMADA A ANTHROPIC API ─────────────────────────────────────────────────
 function callClaude(messages, systemPrompt, maxTokens = 1000) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
@@ -64,7 +60,6 @@ function callClaude(messages, systemPrompt, maxTokens = 1000) {
   });
 }
 
-// ─── REESCRIBIR NOTA COMPLETA ─────────────────────────────────────────────────
 async function rewriteArticle(article) {
   const prompt = `
 Fuente original:
@@ -76,15 +71,15 @@ CATEGORÍA: ${article.category}
 
 Genera una nota periodística completa en formato JSON con exactamente estas claves:
 {
-  "headline": "Titular principal (máx 90 caracteres, optimizado para SEO y clicks)",
-  "subheadline": "Subtítulo que amplía el titular (máx 140 caracteres)",
-  "body": "Nota completa de 3-4 párrafos (250-350 palabras). Primer párrafo responde quién/qué/dónde/cuándo. Incluye contexto local de la alcaldía ${article.alcaldia}.",
-  "summary": "Resumen de 2 oraciones para SEO (meta description, 155 caracteres máx)",
-  "seo_title": "Título SEO optimizado (60 caracteres máx)",
+  "headline": "Titular principal (máx 90 caracteres)",
+  "subheadline": "Subtítulo (máx 140 caracteres)",
+  "body": "Nota completa de 3-4 párrafos (250-350 palabras)",
+  "summary": "Resumen de 2 oraciones (155 caracteres máx)",
+  "seo_title": "Título SEO (60 caracteres máx)",
   "tags": ["tag1","tag2","tag3","tag4","tag5"],
-  "social_tweet": "Tweet de máx 240 caracteres con hashtags relevantes de CDMX y la alcaldía",
-  "social_instagram": "Caption para Instagram (máx 300 caracteres) con emojis apropiados y hashtags",
-  "social_facebook": "Post para Facebook (máx 200 caracteres) más conversacional",
+  "social_tweet": "Tweet máx 240 caracteres con hashtags",
+  "social_instagram": "Caption Instagram máx 300 caracteres con emojis",
+  "social_facebook": "Post Facebook máx 200 caracteres",
   "urgency": "alta|media|baja",
   "reading_time": 2
 }
@@ -105,7 +100,7 @@ Responde SOLO el JSON, sin texto adicional ni backticks.
       ...article,
       ...parsed,
       status: 'published',
-      rewrittenAt: new Date().toISOString(),
+      rewritten_at: new Date().toISOString(),
     };
   } catch(e) {
     console.error('Error parsing AI response:', e.message);
@@ -113,17 +108,14 @@ Responde SOLO el JSON, sin texto adicional ni backticks.
   }
 }
 
-// ─── CLASIFICAR Y PRIORIZAR BATCH ────────────────────────────────────────────
 async function rewriteBatch(articles, maxConcurrent = 3) {
   console.log(`[IA Editorial] Procesando ${articles.length} artículos...`);
   const results = [];
-  
-  // Priorizar por peso de fuente y confianza geográfica
+
   const sorted = [...articles].sort((a, b) =>
-    (b.sourceWeight + b.geoConfidence) - (a.sourceWeight + a.geoConfidence)
+    (b.source_weight + b.geo_confidence) - (a.source_weight + a.geo_confidence)
   );
 
-  // Procesar en chunks para no saturar la API
   for (let i = 0; i < sorted.length; i += maxConcurrent) {
     const chunk = sorted.slice(i, i + maxConcurrent);
     const promises = chunk.map(async (article) => {
@@ -139,8 +131,7 @@ async function rewriteBatch(articles, maxConcurrent = 3) {
     });
     const chunkResults = await Promise.all(promises);
     results.push(...chunkResults);
-    
-    // Pausa entre chunks para respetar rate limits
+
     if (i + maxConcurrent < sorted.length) {
       await new Promise(r => setTimeout(r, 1000));
     }
@@ -151,44 +142,9 @@ async function rewriteBatch(articles, maxConcurrent = 3) {
   return results;
 }
 
-// ─── GENERAR TARJETA VISUAL (SVG metadata) ────────────────────────────────────
-async function generateSocialCard(article) {
-  const prompt = `
-Genera el texto exacto para una tarjeta visual de ColoniaPress para ${article.alcaldia}.
-Responde en JSON:
-{
-  "card_title": "Titular corto para tarjeta (máx 60 caracteres)",
-  "card_kicker": "Etiqueta de sección en MAYÚSCULAS (máx 15 caracteres, ej: SEGURIDAD)",
-  "card_alcaldia": "${article.alcaldia}",
-  "card_footer": "coloniapress.mx · ${article.alcaldia}",
-  "hashtags": "#ColoniaPress #CDMX #${article.alcaldia.replace(/\s/g,'')} #${article.category}"
-}
-Solo el JSON.
-`;
-
-  const raw = await callClaude(
-    [{ role: 'user', content: prompt }],
-    EDITORIAL_VOICE,
-    300
-  );
-
-  try {
-    return JSON.parse(raw.replace(/```json|```/g, '').trim());
-  } catch(e) {
-    return {
-      card_title: article.headline || article.title,
-      card_kicker: article.category?.toUpperCase() || 'NOTICIAS',
-      card_alcaldia: article.alcaldia,
-      card_footer: `coloniapress.mx · ${article.alcaldia}`,
-      hashtags: `#ColoniaPress #CDMX #${article.alcaldia.replace(/\s/g,'')}`
-    };
-  }
-}
-
-// ─── GENERAR RESUMEN DIARIO POR ALCALDÍA ─────────────────────────────────────
 async function generateDailySummary(alcaldia, articles) {
   if (!articles.length) return null;
-  
+
   const topArticles = articles.slice(0, 5).map((a, i) =>
     `${i+1}. ${a.headline || a.title}`
   ).join('\n');
@@ -200,9 +156,9 @@ ${topArticles}
 
 Responde en JSON:
 {
-  "email_subject": "Asunto del boletín email (máx 60 chars, con emoji)",
-  "email_preview": "Texto de preview del email (máx 90 chars)",
-  "intro_paragraph": "Párrafo de bienvenida del boletín (2-3 oraciones, menciona ${alcaldia})",
+  "email_subject": "Asunto del boletín (máx 60 chars, con emoji)",
+  "email_preview": "Preview del email (máx 90 chars)",
+  "intro_paragraph": "Párrafo de bienvenida (2-3 oraciones)",
   "push_notification": "Notificación push (máx 100 chars)"
 }
 Solo JSON.
@@ -221,4 +177,4 @@ Solo JSON.
   }
 }
 
-module.exports = { rewriteArticle, rewriteBatch, generateSocialCard, generateDailySummary };
+module.exports = { rewriteArticle, rewriteBatch, generateDailySummary };
