@@ -1,7 +1,3 @@
-/**
- * ColoniaPress — Capa de Base de Datos
- */
-
 const Database = require('better-sqlite3');
 const path = require('path');
 
@@ -110,23 +106,41 @@ const Articles = {
         urgency, seo_title, tags, social_tweet, social_instagram, social_facebook,
         pub_date, scraped_at, rewritten_at, status, reading_time
       ) VALUES (
-        @id, @title, @headline, @subheadline, @body, @summary, @description,
-        @url, @source, @source_weight, @alcaldia, @geo_confidence, @category,
-        @urgency, @seo_title, @tags, @social_tweet, @social_instagram, @social_facebook,
-        @pub_date, @scraped_at, @rewritten_at, @status, @reading_time
+        ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?
       )
       ON CONFLICT(id) DO UPDATE SET
         status = CASE WHEN articles.status = 'published' THEN 'pending_rewrite' ELSE articles.status END,
-        title = excluded.title,
         scraped_at = excluded.scraped_at
     `);
-    return stmt.run({
-      ...article,
+    return stmt.run(
+      article.id,
+      article.title,
+      article.headline || null,
+      article.subheadline || null,
+      article.body || null,
+      article.summary || null,
+      article.description || null,
+      article.url || null,
+      article.source || null,
+      article.sourceWeight || article.source_weight || 5,
+      article.alcaldia,
+      article.geoConfidence || article.geo_confidence || 0,
+      article.category || 'general',
+      article.urgency || 'media',
+      article.seo_title || null,
       tags,
-      source_weight: article.sourceWeight || 5,
-      geo_confidence: article.geoConfidence || 0,
-      status: article.status || 'pending_rewrite',
-    });
+      article.social_tweet || null,
+      article.social_instagram || null,
+      article.social_facebook || null,
+      article.pubDate || article.pub_date || new Date().toISOString(),
+      article.scrapedAt || article.scraped_at || new Date().toISOString(),
+      article.rewritten_at || null,
+      article.status || 'pending_rewrite',
+      article.reading_time || 2
+    );
   },
 
   getByAlcaldia(alcaldia, limit = 20, offset = 0) {
