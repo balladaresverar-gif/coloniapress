@@ -1,9 +1,3 @@
-/**
- * ColoniaPress — Servidor API + Frontend
- * Express.js · Puerto 3000
- * Sirve el portal web y expone endpoints para el frontend
- */
-
 require('dotenv').config({ path: require('path').join(__dirname, '../config/.env') });
 
 const express = require('express');
@@ -18,19 +12,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 
-// ─── MIDDLEWARE LOGGING ───────────────────────────────────────────────────────
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    console.log(`[API] ${req.method} ${req.path}`);
-  }
+  if (req.path.startsWith('/api')) console.log(`[API] ${req.method} ${req.path}`);
   next();
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// ENDPOINTS DE NOTICIAS
-// ═══════════════════════════════════════════════════════════════════════
-
-// GET /api/news?alcaldia=Cuauhtémoc&limit=20&offset=0
 app.get('/api/news', (req, res) => {
   const { alcaldia, limit = 20, offset = 0, category } = req.query;
   try {
@@ -42,18 +28,13 @@ app.get('/api/news', (req, res) => {
     } else {
       articles = Articles.getLatestAll(parseInt(limit));
     }
-    // Parsear tags
-    articles = articles.map(a => ({
-      ...a,
-      tags: a.tags ? a.tags.split(',') : []
-    }));
+    articles = articles.map(a => ({ ...a, tags: a.tags ? a.tags.split(',') : [] }));
     res.json({ ok: true, articles, total: articles.length });
   } catch(e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// GET /api/news/featured?alcaldia=Cuauhtémoc
 app.get('/api/news/featured', (req, res) => {
   const { alcaldia } = req.query;
   if (!alcaldia) return res.status(400).json({ ok: false, error: 'alcaldia requerida' });
@@ -65,7 +46,6 @@ app.get('/api/news/featured', (req, res) => {
   }
 });
 
-// GET /api/news/trending
 app.get('/api/news/trending', (req, res) => {
   try {
     const trending = Articles.getTrending(10);
@@ -75,7 +55,6 @@ app.get('/api/news/trending', (req, res) => {
   }
 });
 
-// GET /api/news/:id
 app.get('/api/news/:id', (req, res) => {
   try {
     const article = getDB()
@@ -90,18 +69,11 @@ app.get('/api/news/:id', (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// ENDPOINTS DE ALCALDÍAS
-// ═══════════════════════════════════════════════════════════════════════
-
-// GET /api/alcaldias — resumen de todas las alcaldías
 app.get('/api/alcaldias', (req, res) => {
   try {
     const db = getDB();
     const stats = db.prepare(`
-      SELECT alcaldia,
-             COUNT(*) as total,
-             MAX(pub_date) as last_update,
+      SELECT alcaldia, COUNT(*) as total, MAX(pub_date) as last_update,
              SUM(CASE WHEN urgency='alta' THEN 1 ELSE 0 END) as urgent
       FROM articles WHERE status='published'
       GROUP BY alcaldia ORDER BY total DESC
@@ -112,29 +84,20 @@ app.get('/api/alcaldias', (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// SUSCRIPTORES
-// ═══════════════════════════════════════════════════════════════════════
-
-// POST /api/subscribe
 app.post('/api/subscribe', (req, res) => {
   const { email, alcaldia } = req.body;
   if (!email || !alcaldia) return res.status(400).json({ ok: false, error: 'email y alcaldia requeridos' });
-
   const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRx.test(email)) return res.status(400).json({ ok: false, error: 'email inválido' });
-
   try {
     const result = Subscribers.add(email, alcaldia);
     if (!result.success) return res.json({ ok: false, reason: result.reason });
-    // TODO: enviar email de confirmación con result.token
     res.json({ ok: true, message: `¡Suscrito a noticias de ${alcaldia}!` });
   } catch(e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// GET /api/confirm/:token
 app.get('/api/confirm/:token', (req, res) => {
   const confirmed = Subscribers.confirm(req.params.token);
   if (confirmed) {
@@ -144,11 +107,6 @@ app.get('/api/confirm/:token', (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// PAUTA SEGMENTADA
-// ═══════════════════════════════════════════════════════════════════════
-
-// GET /api/ad?alcaldia=Cuauhtémoc&position=banner
 app.get('/api/ad', (req, res) => {
   const { alcaldia, position = 'banner' } = req.query;
   if (!alcaldia) return res.status(400).json({ ok: false });
@@ -161,7 +119,6 @@ app.get('/api/ad', (req, res) => {
   }
 });
 
-// POST /api/ad/:id/click
 app.post('/api/ad/:id/click', (req, res) => {
   try {
     getDB().prepare('UPDATE ad_slots SET clicks=clicks+1 WHERE id=?').run(req.params.id);
@@ -169,12 +126,7 @@ app.post('/api/ad/:id/click', (req, res) => {
   } catch(e) { res.json({ ok: false }); }
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// DASHBOARD ADMIN (protegido en producción con middleware auth)
-// ═══════════════════════════════════════════════════════════════════════
-
 app.get('/api/admin/dashboard', (req, res) => {
-  // TODO: agregar autenticación (JWT / Bearer token)
   try {
     const dash = Analytics.getDashboard();
     const db = getDB();
@@ -186,18 +138,16 @@ app.get('/api/admin/dashboard', (req, res) => {
   }
 });
 
-// POST /api/admin/trigger — dispara ciclo manual
 app.post('/api/admin/trigger', async (req, res) => {
   try {
     const { runCycle } = require('./orchestrator');
     res.json({ ok: true, message: 'Ciclo iniciado' });
-    runCycle().catch(console.error); // Async sin bloquear
+    runCycle().catch(console.error);
   } catch(e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
 
-// ─── SITEMAP DINÁMICO ─────────────────────────────────────────────────────────
 app.get('/sitemap.xml', (req, res) => {
   try {
     const articles = Articles.getLatestAll(200);
@@ -211,29 +161,33 @@ app.get('/sitemap.xml', (req, res) => {
   }
 });
 
-// ─── ROBOTS.TXT ───────────────────────────────────────────────────────────────
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain');
   res.send(`User-agent: *\nAllow: /\nDisallow: /api/admin/\nSitemap: https://coloniapress.mx/sitemap.xml`);
 });
 
-// ─── FALLBACK SPA ─────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
 });
 
-// ─── ARRANQUE ─────────────────────────────────────────────────────────────────
-
 module.exports = app;
+
 app.listen(PORT, () => {
   console.log(`\n  ColoniaPress API corriendo en http://localhost:${PORT}`);
   console.log(`  Dashboard: http://localhost:${PORT}/api/admin/dashboard`);
   console.log(`  Sitemap:   http://localhost:${PORT}/sitemap.xml\n`);
 
-  // Iniciar orchestrator automáticamente
   const { runCycle } = require('./orchestrator');
   const INTERVAL_MS = parseInt(process.env.SCRAPE_INTERVAL_MIN || '15') * 60 * 1000;
   console.log(`  Scraper: ciclo cada ${INTERVAL_MS/60000} minutos\n`);
+
+  // Inicializar DB y resetear artículos viejos ANTES del primer ciclo
+  console.log('  Inicializando DB...');
+  getDB();
+  console.log('  Reseteando artículos a pending_rewrite...');
+  getDB().prepare("UPDATE articles SET status='pending_rewrite' WHERE status != 'pending_rewrite'").run();
+  console.log('  Reset completado. Iniciando primer ciclo...');
+
   runCycle().catch(console.error);
   setInterval(() => runCycle().catch(console.error), INTERVAL_MS);
 });
