@@ -248,15 +248,11 @@ function stripHtml(html){
   return html.replace(/<[^>]*>/g, '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').trim();
 }
 
-// Imagen garantizada (sin llave): siempre carga, estable por nota.
-// Es la "red de seguridad" si Unsplash falla.
 function fallbackImage(article){
   const seed = encodeURIComponent((article && article.id) || (article && article.category) || 'coloniapress');
   return `https://picsum.photos/seed/${seed}/800/450`;
 }
 
-// Intenta Unsplash (foto por tema); si falla por lo que sea, usa la imagen garantizada.
-// SIEMPRE devuelve una URL válida → nunca queda el recuadro vacío.
 async function getImage(article){
   const query = imgQuery(article);
   if(imgCache[query]) return imgCache[query];
@@ -288,15 +284,34 @@ function imgQuery(article){
   return queries[cat] || `${alcaldia} Mexico City neighborhood`;
 }
 
-async function loadNews(alc){
+// Carga un feed genérico desde una URL del API
+async function loadFeed(url){
   document.getElementById('heroZone').innerHTML = '<div class="loading">Cargando noticias...</div>';
   document.getElementById('newsGrid').innerHTML = '';
   document.getElementById('briefsList').innerHTML = '';
   try {
-    const res = await fetch(`/api/news?alcaldia=${encodeURIComponent(alc)}&limit=10`);
+    const res = await fetch(url);
     const data = await res.json();
-    const articles = data.articles || [];
-    await renderArticles(articles);
+    await renderArticles(data.articles || []);
+  } catch(e) {
+    document.getElementById('heroZone').innerHTML = '<div class="empty">Error cargando noticias.</div>';
+  }
+}
+
+function loadNews(alc){
+  return loadFeed(`/api/news?alcaldia=${encodeURIComponent(alc)}&limit=10`);
+}
+
+// Trae lo último de toda la CDMX y filtra por categoría en el navegador
+async function loadCategoria(cat){
+  document.getElementById('heroZone').innerHTML = '<div class="loading">Cargando noticias...</div>';
+  document.getElementById('newsGrid').innerHTML = '';
+  document.getElementById('briefsList').innerHTML = '';
+  try {
+    const res = await fetch('/api/news?limit=100');
+    const data = await res.json();
+    const filtered = (data.articles || []).filter(a => (a.category || '').toLowerCase() === cat);
+    await renderArticles(filtered);
   } catch(e) {
     document.getElementById('heroZone').innerHTML = '<div class="empty">Error cargando noticias.</div>';
   }
@@ -304,7 +319,9 @@ async function loadNews(alc){
 
 async function renderArticles(articles){
   if(!articles.length){
-    document.getElementById('heroZone').innerHTML = '<div class="empty">Sin noticias disponibles para esta alcaldía aún. Vuelve en 15 minutos.</div>';
+    document.getElementById('heroZone').innerHTML = '<div class="empty">Sin noticias disponibles en esta sección aún. Vuelve en unos minutos.</div>';
+    document.getElementById('newsGrid').innerHTML = '';
+    document.getElementById('briefsList').innerHTML = '';
     return;
   }
 
@@ -405,6 +422,8 @@ function selectAlc(a){
   document.getElementById('locName').textContent = a;
   document.getElementById('secLabel').textContent = 'Noticias destacadas · ' + a;
   document.getElementById('adAlc').textContent = a;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('on'));
+  document.querySelector('.nav-btn').classList.add('on'); // marca "Tu alcaldía"
   renderAlcaldias();
   loadNews(a);
 }
@@ -412,6 +431,22 @@ function selectAlc(a){
 function setNav(el){
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
+  const label = el.textContent.trim();
+  const secLabel = document.getElementById('secLabel');
+  if(label === 'Tu alcaldía'){
+    secLabel.textContent = 'Noticias destacadas · ' + currentAlc;
+    loadNews(currentAlc);
+  } else if(label === 'CDMX'){
+    secLabel.textContent = 'Lo último en toda la CDMX';
+    loadFeed('/api/news?limit=12');
+  } else {
+    const map = { 'Seguridad':'seguridad', 'Servicios':'servicios', 'Cultura':'cultura', 'Transporte':'movilidad', 'Política':'política' };
+    const cat = map[label];
+    if(cat){
+      secLabel.textContent = label + ' · CDMX';
+      loadCategoria(cat);
+    }
+  }
 }
 
 async function subscribe(){
