@@ -10,6 +10,7 @@ async function runCycle() {
   console.log(`  ColoniaPress — Ciclo ${new Date().toLocaleString('es-MX')}`);
   console.log('══════════════════════════════════════════\n');
 
+  const START = Date.now();
   const stats = { scraped: 0, rewritten: 0, published: 0, social: 0, errors: [] };
 
   try {
@@ -41,7 +42,7 @@ async function runCycle() {
       const rewritten = await rewriteBatch(pending, 3);
       for (const article of rewritten) {
         if (article.status === 'published') {
-          Articles.upsert(article);
+          Articles.publishRewritten(article);   // ← ANTES: Articles.upsert(article) — tiraba la versión reescrita
           stats.rewritten++;
         }
       }
@@ -97,7 +98,5 @@ async function runCycle() {
 
   return stats;
 }
-
-const START = Date.now();
 
 module.exports = { runCycle };
